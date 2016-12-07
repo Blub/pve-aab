@@ -104,6 +104,7 @@ sub read_config {
 	    chomp $res->{description};	    
 	} elsif ($rec =~ s/^([^:]+):\s*(.*\S)\s*\n//) {
 	    my ($key, $value) = (lc ($1), $2);
+	    $value = 'amd64' if $key eq 'architecture' && $value eq 'x86_64';
 	    if ($key eq 'source' || $key eq 'mirror') {
 		push @{$res->{$key}}, $value;
 	    } else {
@@ -236,10 +237,14 @@ sub initialize {
 
     $fh = IO::File->new($self->{'pacman.conf'}, O_WRONLY|O_CREAT|O_EXCL) ||
 	die "unable to write pacman config file $self->{'pacman.conf'} - $!";
+
+    my $arch = $config->{architecture};
+    $arch = 'x86_64' if $arch eq 'amd64';
+
     print $fh <<"EOF";
 [options]
 HoldPkg = pacman glibc
-Architecture = $config->{architecture}
+Architecture = $arch
 CheckSpace
 SigLevel = Never
 
@@ -251,7 +256,7 @@ $servers
 $servers
 EOF
 
-    if ($config->{architecture} eq 'x86_64') {
+    if ($arch eq 'x86_64') {
 	print $fh "[multilib]\n$servers\n";
     }
 
